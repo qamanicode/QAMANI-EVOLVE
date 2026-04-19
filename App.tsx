@@ -64,7 +64,7 @@ const PROGENITOR_DATA: SpinnerData = {
 };
 
 // --- Overlay Component for Streaming Text ---
-const StreamingOverlay = ({ buffer, isVisible, accentColor }: { buffer: string, isVisible: boolean, accentColor: string }) => {
+const StreamingOverlay = ({ buffer, isVisible, accentColor, theme = 'dark' }: { buffer: string, isVisible: boolean, accentColor: string, theme?: 'dark' | 'light' }) => {
     const data = useMemo(() => parsePartialJson(buffer), [buffer]);
     
     // We only render if visible OR if there is content (to allow fade out)
@@ -72,8 +72,9 @@ const StreamingOverlay = ({ buffer, isVisible, accentColor }: { buffer: string, 
 
     return (
         <div 
-            className={`absolute inset-0 z-50 p-4 md:p-8 flex flex-col pointer-events-none transition-all duration-500 ease-out bg-black/90 backdrop-blur-sm
-            ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+            className={`absolute inset-0 z-50 p-4 md:p-8 flex flex-col pointer-events-none transition-all duration-500 ease-out backdrop-blur-sm
+            ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}
+            ${theme === 'dark' ? 'bg-black/90' : 'bg-white/90'}`}
         >
             {/* Inner container handles instant content hide when generation stops, preventing visual clash */}
             <div className={`flex flex-col h-full transition-opacity ${isVisible ? 'opacity-100 duration-500' : 'opacity-0 duration-0'}`}>
@@ -85,22 +86,26 @@ const StreamingOverlay = ({ buffer, isVisible, accentColor }: { buffer: string, 
                         </span>
                      </div>
                      {data.mutationName && (
-                         <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-none animate-in fade-in slide-in-from-left-2 duration-300">
+                          <h2 className={`text-xl md:text-2xl font-bold tracking-tight leading-none animate-in fade-in slide-in-from-left-2 duration-300
+                            ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
                              {data.mutationName}
                          </h2>
                      )}
                      {data.reasoning && (
-                         <p className="text-xs md:text-sm text-neutral-400 italic font-serif leading-relaxed animate-in fade-in slide-in-from-left-2 delay-100 duration-500 border-l-2 border-neutral-800 pl-3">
+                          <p className={`text-xs md:text-sm italic font-serif leading-relaxed animate-in fade-in slide-in-from-left-2 delay-100 duration-500 border-l-2 pl-3
+                            ${theme === 'dark' ? 'text-neutral-400 border-neutral-800' : 'text-neutral-500 border-neutral-200'}`}>
                              {data.reasoning}
                          </p>
                      )}
                 </div>
                 
-                <div className="flex-1 min-h-0 relative mt-2 rounded border border-neutral-900 bg-neutral-950/50 overflow-hidden">
-                    <pre className="absolute inset-0 p-4 text-[10px] font-mono text-neutral-500 leading-relaxed overflow-hidden whitespace-pre-wrap break-all opacity-70">
+                <div className={`flex-1 min-h-0 relative mt-2 rounded border overflow-hidden
+                    ${theme === 'dark' ? 'bg-neutral-950/50 border-neutral-900' : 'bg-neutral-50/50 border-neutral-200'}`}>
+                    <pre className={`absolute inset-0 p-4 text-[10px] font-mono leading-relaxed overflow-hidden whitespace-pre-wrap break-all opacity-70
+                        ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-400'}`}>
                         {/* We only show the last 1000 chars to create a 'terminal stream' effect without scrolling */}
                         {data.p5Code || buffer.slice(-500) || "Initializing..."}
-                        <span className={`inline-block w-2 h-4 align-middle ml-1 bg-white animate-pulse`} />
+                        <span className={`inline-block w-2 h-4 align-middle ml-1 animate-pulse ${theme === 'dark' ? 'bg-white' : 'bg-black'}`} />
                     </pre>
                 </div>
             </div>
@@ -120,6 +125,10 @@ export default function App() {
   const [exportState, setExportState] = useState<{ variant: 'a' | 'b', progress: number } | null>(null);
 
   const [generationStartTime, setGenerationStartTime] = useState<number>(0);
+  
+  // Theme & Layout State
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [viewLayout, setViewLayout] = useState<'desktop' | 'phone'>('desktop');
   
   // Mobile UI State
   const [mobileTab, setMobileTab] = useState<'a' | 'b'>('a');
@@ -313,6 +322,29 @@ export default function App() {
   const isInteractive = !isGenerating && !exportState;
   const maxIndex = candidates ? history.length : history.length - 1;
 
+  // Modern Toggle Button Component
+  const ModernToggle = ({ active, label, icon, onClick, activeColor }: { 
+    active: boolean, 
+    label: string, 
+    icon: string, 
+    onClick: () => void,
+    activeColor: string 
+  }) => (
+    <motion.button
+      whileHover={{ scale: 1.05, backgroundColor: active ? activeColor : undefined }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      className={`h-8 px-3 rounded-full flex items-center gap-2 border transition-all duration-300 text-[9px] uppercase font-bold tracking-[0.1em]
+      ${active 
+        ? `${activeColor} border-transparent text-white shadow-[0_0_15px_-3px_rgba(0,0,0,0.3)]` 
+        : `bg-neutral-800/20 border-neutral-800 text-neutral-500 hover:text-neutral-300`}`}
+    >
+      <span className="text-[10px]">{icon}</span>
+      <span className="hidden lg:inline">{label}</span>
+      {active && <motion.div layoutId={`${label}-dot`} className="w-1 h-1 bg-white rounded-full" />}
+    </motion.button>
+  );
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -364,7 +396,8 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen bg-[#020202] text-neutral-400 font-sans flex flex-col overflow-hidden relative">
+    <div className={`h-screen font-sans flex flex-col overflow-hidden relative transition-colors duration-700
+      ${theme === 'dark' ? 'bg-[#020202] text-neutral-400' : 'bg-neutral-50 text-neutral-600'}`}>
       <style>{`
         @keyframes gradientFlow {
           0% { background-position: 0% 50%; }
@@ -375,32 +408,56 @@ export default function App() {
             background-size: 200% 200%;
             animation: gradientFlow 5s ease infinite;
         }
+        .phone-shadow {
+            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5);
+        }
       `}</style>
 
       {/* GLOBAL HEADER */}
-      <div className="flex-none h-14 flex items-center justify-between px-3 md:px-4 bg-black border-b border-neutral-900 z-20">
+      <div className={`flex-none h-14 flex items-center justify-between px-3 md:px-4 z-20 border-b transition-colors duration-500
+        ${theme === 'dark' ? 'bg-black border-neutral-900' : 'bg-white border-neutral-200'}`}>
             <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 mr-2">
                  <span className="font-bold tracking-tight text-xs sm:text-sm hidden sm:inline-block">
-                     <span className="text-neutral-100">QAMANI</span>
+                     <span className={theme === 'dark' ? 'text-neutral-100' : 'text-neutral-900'}>QAMANI</span>
                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 animate-gradient-text">EVOLVE</span>
                  </span>
-                 <div className="h-4 w-px bg-neutral-800 hidden sm:block"></div>
+                 <div className={`h-4 w-px hidden sm:block ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-200'}`}></div>
                   <div className="text-[9px] md:text-[10px] font-mono truncate py-1">
                     {!hasStarted ? "" : (isSelectionMode ? (
                         <div className="flex items-center gap-2">
                              <span className="text-blue-400 font-black tracking-[0.3em] drop-shadow-[0_0_8px_rgba(96,165,250,0.4)]">QAMANI</span>
-                             <div className="w-1 h-1 rounded-full bg-neutral-800"></div>
-                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-neutral-400 to-neutral-600 font-bold tracking-[0.15em]">LIVE CODING</span>
+                             <div className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-200'}`}></div>
+                             <span className={`text-transparent bg-clip-text bg-gradient-to-r font-bold tracking-[0.15em]
+                                ${theme === 'dark' ? 'from-neutral-400 to-neutral-600' : 'from-neutral-600 to-neutral-400'}`}>LIVE CODING</span>
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
-                             <span className="text-neutral-600 font-medium tracking-widest">TIMELINE //</span>
-                             <span className="px-2 py-0.5 rounded-sm bg-neutral-900 border border-neutral-800 text-neutral-300 font-bold tabular-nums tracking-tighter">
-                                {currentIndex + 1} <span className="text-neutral-700 mx-1">OF</span> {history.length}
+                             <span className={`${theme === 'dark' ? 'text-neutral-600' : 'text-neutral-400'} font-medium tracking-widest`}>TIMELINE //</span>
+                             <span className={`px-2 py-0.5 rounded-sm border font-bold tabular-nums tracking-tighter
+                                ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-300' : 'bg-neutral-100 border-neutral-200 text-neutral-600'}`}>
+                                {currentIndex + 1} <span className="text-neutral-500 mx-1">OF</span> {history.length}
                              </span>
                         </div>
                     ))}
                   </div>
+            </div>
+
+            {/* THEME & VIEW MODES (NEW) */}
+            <div className="flex items-center gap-2 mr-2 md:mr-6">
+                <ModernToggle 
+                    active={theme === 'light'} 
+                    label="Light" 
+                    icon="☼" 
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                    activeColor="bg-blue-600"
+                />
+                <ModernToggle 
+                    active={viewLayout === 'phone'} 
+                    label="Phone" 
+                    icon="📱" 
+                    onClick={() => setViewLayout(viewLayout === 'desktop' ? 'phone' : 'desktop')}
+                    activeColor="bg-purple-600"
+                />
             </div>
 
             {hasStarted && (
@@ -467,13 +524,44 @@ export default function App() {
       </div>
 
       {/* VISUALS */}
-      {/* We use lg:flex-row to ensure tablets (often < 1024px) get the mobile view */}
-      <div 
-        className="flex-1 min-h-0 bg-black shadow-[0_0_50px_rgba(0,0,0,0.8)_inset] flex flex-col lg:flex-row border-b border-neutral-900 z-10 relative"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-                {!isSelectionMode ? (
+      <div className={`flex-1 relative flex overflow-hidden ${viewLayout === 'phone' ? 'items-center justify-center py-12' : ''}`}>
+           {/* Windows Phone Overlay Backdrop */}
+           <AnimatePresence>
+                {viewLayout === 'phone' && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-[5] bg-black/40 backdrop-blur-xl pointer-events-none"
+                    />
+                )}
+           </AnimatePresence>
+
+           <div className={`relative transition-all duration-1000 ease-[cubic-bezier(0.19,1,0.22,1)]
+                ${viewLayout === 'phone' 
+                    ? 'w-[320px] h-[640px] bg-black rounded-[46px] border-[10px] border-neutral-900 phone-shadow overflow-hidden z-10 flex flex-col' 
+                    : 'w-full h-full'}`}>
+                
+                {/* Phone Top Bar */}
+                {viewLayout === 'phone' && (
+                    <div className="flex-none h-8 px-8 flex items-center justify-between pointer-events-none">
+                        <span className="text-[10px] font-bold text-neutral-600">LTE</span>
+                        <span className="text-[10px] font-bold text-neutral-600 font-mono">15:48</span>
+                        <div className="w-4 h-2 rounded-[2px] border border-neutral-700 relative">
+                             <div className="absolute inset-px bg-green-900 w-2/3" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Main Render Stage */}
+                <div 
+                    className={`flex-1 min-h-0 flex flex-col lg:flex-row relative transition-colors duration-500
+                        ${theme === 'dark' ? 'bg-black shadow-[0_0_50px_rgba(0,0,0,0.8)_inset]' : 'bg-white shadow-[0_0_50px_rgba(0,0,0,0.05)_inset]'}
+                        ${viewLayout === 'phone' ? 'border-none' : 'border-b border-neutral-900'}`}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    {!isSelectionMode ? (
             // SINGLE VIEW
             <div className="w-full h-full relative flex items-center justify-center">
                 <P5Canvas code={currentHistorySpinner?.p5Code || ""} />
@@ -566,6 +654,7 @@ export default function App() {
                             buffer={candidates.a.buffer} 
                             isVisible={isGenerating} 
                             accentColor="bg-blue-500 text-blue-500" 
+                            theme={theme}
                         />
                     )}
 
@@ -605,6 +694,7 @@ export default function App() {
                             buffer={candidates.b.buffer} 
                             isVisible={isGenerating} 
                             accentColor="bg-purple-500 text-purple-500" 
+                            theme={theme}
                         />
                     )}
 
@@ -622,6 +712,22 @@ export default function App() {
                 </div>
             </>
         )}
+                </div>
+
+                {/* Phone Bottom Navigation (Lumia Style) */}
+                {viewLayout === 'phone' && (
+                    <div className={`flex-none h-14 flex items-center justify-around z-50 border-t pointer-events-none pb-2 transition-colors duration-500
+                        ${theme === 'dark' ? 'bg-black border-neutral-900/50' : 'bg-white border-neutral-200'}`}>
+                        <span className={`text-xl transition-colors ${theme === 'dark' ? 'text-neutral-700' : 'text-neutral-300'}`}>←</span>
+                        <div className={`w-7 h-7 border-2 rounded-full flex items-center justify-center transition-colors
+                            ${theme === 'dark' ? 'border-neutral-700' : 'border-neutral-300'}`}>
+                             <div className={`w-1.5 h-1.5 rounded-px transition-colors ${theme === 'dark' ? 'bg-neutral-700' : 'bg-neutral-300'}`} />
+                        </div>
+                        <span className={`text-xl transition-colors ${theme === 'dark' ? 'text-neutral-700' : 'text-neutral-300'}`}>🔍</span>
+                    </div>
+                )}
+           </div>
+      </div>
 
         {/* EXPORT PROGRESS OVERLAY */}
         {exportState && (
@@ -653,12 +759,10 @@ export default function App() {
                 </div>
             </div>
         )}
-      </div>
 
-      {/* CONSOLE / DATA VIEW */}
-      {/* Adjusted height: Auto-height (flex-none) when running to minimize empty space, fixed height for start screen to fit content */}
-      <div className={`${!hasStarted ? 'h-[40vh]' : 'flex-none'} bg-[#080808] flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20 relative transition-[height] duration-500`}>
-        <Terminal 
+        {/* CONSOLE / DATA VIEW */}
+        <div className={`${!hasStarted ? 'h-[40vh]' : 'flex-none'} bg-[#080808] flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20 relative transition-[height] duration-500`}>
+          <Terminal 
             currentData={currentHistorySpinner}
             candidates={candidates}
             isGenerating={isGenerating}
@@ -669,6 +773,7 @@ export default function App() {
             mobileTab={mobileTab}
             allowInteraction={hasStarted}
             stats={stats}
+            theme={theme}
         />
 
         {/* LANDING OVERLAY */}

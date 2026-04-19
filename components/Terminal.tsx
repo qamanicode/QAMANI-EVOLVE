@@ -106,6 +106,7 @@ interface TerminalPanelProps {
         totalTokens: number;
         totalFailures: number;
     };
+    theme?: 'dark' | 'light';
 }
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({
@@ -120,7 +121,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
     overlayPosition = "inset-x-0",
     className = "",
     allowInteraction = true,
-    sessionStats
+    sessionStats,
+    theme = 'dark'
 }) => {
     const [liveElapsed, setLiveElapsed] = useState(0);
     const [isCodeOpen, setIsCodeOpen] = useState(false);
@@ -205,7 +207,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
     };
 
     return (
-        <div className={`flex-1 flex flex-col justify-end min-w-0 bg-[#0a0a0a] border-r border-neutral-900/50 last:border-r-0 relative group overflow-hidden ${className}`}>
+        <div className={`flex-1 flex flex-col justify-end min-w-0 last:border-r-0 relative group overflow-hidden transition-colors duration-500 ${className}
+            ${theme === 'dark' ? 'bg-[#0a0a0a] border-r border-neutral-900/50' : 'bg-white border-r border-neutral-200'}`}>
             
             {/* 
                 CODE OVERLAY (Fixed Position to break out of containers) 
@@ -218,22 +221,25 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                         animate={{ y: 0 }}
                         exit={{ y: '110%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 150 }}
-                        className={`fixed ${overlayPosition} top-14 bottom-0 bg-[#050505]/95 backdrop-blur-xl z-[60] flex flex-col pt-0 pb-56 md:pb-80 px-0 border-b border-neutral-800 shadow-[0_-20px_60px_rgba(0,0,0,1)]`}
+                        className={`fixed ${overlayPosition} top-14 bottom-0 z-[60] flex flex-col pt-0 pb-56 md:pb-80 px-0 border-b shadow-[0_-20px_60px_rgba(0,0,0,0.4)] transition-colors duration-500
+                            ${theme === 'dark' ? 'bg-[#050505]/95 backdrop-blur-xl border-neutral-800' : 'bg-white/95 backdrop-blur-xl border-neutral-200'}`}
                     >
                          {/* NEW HEADER in Overlay (Acts as Collapse Trigger) */}
                          <div 
                             onClick={() => setIsCodeOpen(false)}
-                            className="flex-none h-11 flex items-center justify-between px-3 md:px-6 border-b border-neutral-800 cursor-pointer select-none bg-neutral-900 border-t border-neutral-800 hover:bg-neutral-800/80 transition-colors group/header"
+                            className={`flex-none h-11 flex items-center justify-between px-3 md:px-6 border-b border-t cursor-pointer select-none transition-colors group/header
+                                ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 hover:bg-neutral-800/80' : 'bg-neutral-100 border-neutral-200 hover:bg-neutral-200/80'}`}
                         >
                             <div className="flex items-center gap-3">
                                 <motion.span 
                                     animate={{ y: [0, -2, 0] }}
                                     transition={{ repeat: Infinity, duration: 2 }}
-                                    className="text-[10px] text-blue-500 font-bold"
+                                    className={`text-[10px] font-bold ${theme === 'dark' ? 'text-blue-500' : 'text-blue-600'}`}
                                 >
                                     ▼
                                 </motion.span>
-                                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-300 group-hover/header:text-white transition-colors">
+                                <span className={`text-[9px] font-bold uppercase tracking-[0.2em] transition-colors
+                                    ${theme === 'dark' ? 'text-neutral-300 group-hover/header:text-white' : 'text-neutral-600 group-hover/header:text-black'}`}>
                                     Collapse Source Code
                                 </span>
                                 {isGenerating && <div className="flex gap-1 items-center px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 ml-2">
@@ -243,13 +249,16 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                             </div>
 
                             <div className="flex items-center gap-4">
-                                {codeToDisplay && <span className="text-[8px] font-mono text-neutral-600 uppercase tracking-widest bg-black px-2 py-1 rounded border border-neutral-800">{codeToDisplay.length} bytes</span>}
+                                {codeToDisplay && <span className={`text-[8px] font-mono uppercase tracking-widest px-2 py-1 rounded border transition-colors
+                                    ${theme === 'dark' ? 'text-neutral-600 bg-black border-neutral-800' : 'text-neutral-400 bg-white border-neutral-200'}`}>
+                                    {codeToDisplay.length} bytes</span>}
                                 {showControls && data?.p5Code && (
                                     <button 
                                         onClick={handleDownload}
                                         disabled={!allowInteraction}
                                         tabIndex={allowInteraction ? 0 : -1}
-                                        className="flex items-center gap-2 px-3 py-1 rounded-sm bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-all text-[9px] uppercase tracking-[0.1em] font-bold border border-neutral-700 disabled:opacity-50"
+                                        className={`flex items-center gap-2 px-3 py-1 rounded-sm transition-all text-[9px] uppercase tracking-[0.1em] font-bold border disabled:opacity-50
+                                            ${theme === 'dark' ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white border-neutral-700' : 'bg-white hover:bg-neutral-50 text-neutral-600 hover:text-black border-neutral-200 shadow-sm'}`}
                                     >
                                         <span>Download Archive</span>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -259,9 +268,9 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                          </div>
 
                          <div  
-                            className="flex-1 overflow-auto custom-scrollbar bg-[#020202] p-0"
+                            className={`flex-1 overflow-auto custom-scrollbar transition-colors ${theme === 'dark' ? 'bg-[#020202]' : 'bg-neutral-50'}`}
                          >
-                            <div ref={codeScrollRef} className="p-4 md:px-8 py-8 font-mono text-[10px] md:text-xs">
+                            <div ref={codeScrollRef} className={`p-4 md:px-8 py-8 font-mono text-[10px] md:text-xs transition-colors ${theme === 'dark' ? 'text-neutral-400' : 'text-neutral-600'}`}>
                                 {highlightCode(codeToDisplay)}
                             </div>
                         </div>
@@ -272,19 +281,22 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
             {/* 
                 BOTTOM CONTROL GROUP (Z-40 to stay above the code overlay)
             */}
-            <div className="relative z-40 bg-black shadow-[0_-10px_40px_rgba(0,0,0,0.8)] border-t border-neutral-900 flex flex-col max-h-full">
+            <div className={`relative z-40 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] border-t flex flex-col max-h-full transition-colors duration-500
+                ${theme === 'dark' ? 'bg-black border-neutral-900' : 'bg-white border-neutral-200'}`}>
                 
                 {/* TRIGGER BAR (EXPAND) */}
                 <div 
                     onClick={() => setIsCodeOpen(true)}
-                    className={`flex-none h-8 flex items-center justify-between px-3 md:px-6 bg-neutral-900/40 hover:bg-neutral-900 border-b border-neutral-900 cursor-pointer select-none transition-all duration-300 group/trigger
-                    ${isCodeOpen ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'}`}
+                    className={`flex-none h-8 flex items-center justify-between px-3 md:px-6 border-b cursor-pointer select-none transition-all duration-300 group/trigger
+                    ${isCodeOpen ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'}
+                    ${theme === 'dark' ? 'bg-neutral-900/40 hover:bg-neutral-900 border-neutral-900' : 'bg-neutral-50/40 hover:bg-neutral-100 border-neutral-200'}`}
                 >
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-neutral-500 transition-transform duration-300">
+                        <span className={`text-[10px] transition-transform duration-300 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-400'}`}>
                             ▲
                         </span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-600 group-hover/trigger:text-neutral-400 transition-colors">
+                        <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors
+                            ${theme === 'dark' ? 'text-neutral-600 group-hover/trigger:text-neutral-400' : 'text-neutral-400 group-hover/trigger:text-neutral-600'}`}>
                             Expand Code Stream
                         </span>
                     </div>
@@ -294,7 +306,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                             onClick={handleDownload}
                             disabled={!allowInteraction}
                             tabIndex={allowInteraction ? 0 : -1}
-                            className="flex items-center gap-2 px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all text-[9px] uppercase tracking-wider font-medium border border-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`flex items-center gap-2 px-2 py-0.5 rounded border transition-all text-[9px] uppercase tracking-wider font-medium disabled:opacity-50
+                                ${theme === 'dark' ? 'bg-neutral-900 hover:bg-neutral-800 text-neutral-500 hover:text-white border-neutral-800' : 'bg-white hover:bg-neutral-50 text-neutral-400 hover:text-black border-neutral-200'}`}
                         >
                             <span>JS</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -303,26 +316,31 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                 </div>
 
                 {/* INFO & DESCRIPTION */}
-                <div className="flex-shrink min-h-0 overflow-y-auto px-4 md:px-6 pt-3 pb-2 transition-all duration-500 bg-black custom-scrollbar max-h-32 md:max-h-40">
+                <div className={`flex-shrink min-h-0 overflow-y-auto px-4 md:px-6 pt-3 pb-2 transition-all duration-500 custom-scrollbar max-h-32 md:max-h-40
+                    ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
                      <div className="flex items-center gap-2 md:gap-3 mb-1">
-                        <span className={`text-[8px] md:text-[9px] font-bold uppercase tracking-widest px-1.5 py-px rounded bg-neutral-900 border border-neutral-800 ${labelColorClass}`}>
+                        <span className={`text-[8px] md:text-[9px] font-bold uppercase tracking-widest px-1.5 py-px rounded border ${labelColorClass}
+                            ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'}`}>
                             {label}
                         </span>
-                        <h2 className="text-sm md:text-base font-bold text-neutral-200 tracking-tight leading-none truncate">
+                        <h2 className={`text-sm md:text-base font-bold tracking-tight leading-none truncate transition-colors
+                            ${theme === 'dark' ? 'text-neutral-200' : 'text-neutral-800'}`}>
                             {displayData.mutationName || "..."}
                         </h2>
                     </div>
-                    <p className="text-[9px] md:text-[10px] text-neutral-500 leading-relaxed font-medium max-w-3xl">
+                    <p className={`text-[9px] md:text-[10px] leading-relaxed font-medium max-w-3xl transition-colors
+                        ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-400'}`}>
                         {displayData.reasoning || "..."}
                     </p>
                 </div>
 
                 {/* METRICS ROW */}
-                <div className="flex-none grid grid-cols-3 divide-x divide-neutral-900 border-y border-neutral-900 mt-2 bg-black">
+                <div className={`flex-none grid grid-cols-3 divide-x transition-colors duration-500 mt-2
+                    ${theme === 'dark' ? 'bg-black divide-neutral-900 border-y border-neutral-900' : 'bg-white divide-neutral-100 border-y border-neutral-100'}`}>
                     <div className="p-2 md:p-3 flex flex-col justify-end items-end text-right">
                         <span className="text-[8px] md:text-[9px] text-neutral-600 uppercase tracking-[0.2em] mb-1">Time</span>
                         <div className="flex items-baseline gap-1 justify-end w-full">
-                            <span className="text-lg sm:text-xl md:text-3xl xl:text-4xl font-light text-white font-mono tracking-tighter">
+                            <span className={`text-lg sm:text-xl md:text-3xl xl:text-4xl font-light font-mono tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
                                 {timeValue}
                             </span>
                             <span className="text-[10px] md:text-xs text-neutral-600 font-mono">s</span>
@@ -331,7 +349,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                     <div className="p-2 md:p-3 flex flex-col justify-end items-end text-right">
                         <span className="text-[8px] md:text-[9px] text-neutral-600 uppercase tracking-[0.2em] mb-1">Speed</span>
                         <div className="flex items-baseline gap-1 justify-end w-full">
-                            <span className={`text-lg sm:text-xl md:text-3xl xl:text-4xl font-light font-mono tracking-tighter ${isGenerating ? 'text-blue-400 animate-pulse' : 'text-white'}`}>
+                            <span className={`text-lg sm:text-xl md:text-3xl xl:text-4xl font-light font-mono tracking-tighter ${isGenerating ? 'text-blue-400 animate-pulse' : (theme === 'dark' ? 'text-white' : 'text-neutral-900')}`}>
                                 {tpsValue}
                             </span>
                             <span className="text-[10px] md:text-xs text-neutral-600 font-mono">tps</span>
@@ -340,7 +358,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                     <div className="p-2 md:p-3 flex flex-col justify-end items-end text-right">
                         <span className="text-[8px] md:text-[9px] text-neutral-600 uppercase tracking-[0.2em] mb-1">Tokens</span>
                         <div className="flex items-baseline gap-1 justify-end w-full">
-                            <span className="text-lg sm:text-xl md:text-3xl xl:text-4xl font-light text-white font-mono tracking-tighter">
+                            <span className={`text-lg sm:text-xl md:text-3xl xl:text-4xl font-light font-mono tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
                                 {totalTokens}
                             </span>
                         </div>
@@ -349,11 +367,12 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
 
                 {/* DIAGNOSTICS HUB (New) */}
                 {sessionStats && (
-                    <div className="flex-none bg-[#050505] border-b border-neutral-900 pb-1">
-                        <div className="grid grid-cols-3 divide-x divide-neutral-900 border-b border-neutral-900/50">
+                    <div className={`flex-none border-b pb-1 transition-colors duration-500
+                        ${theme === 'dark' ? 'bg-[#050505] border-neutral-900' : 'bg-neutral-50 border-neutral-100'}`}>
+                        <div className={`grid grid-cols-3 divide-x border-b ${theme === 'dark' ? 'divide-neutral-900 border-neutral-900/50' : 'divide-neutral-200 border-neutral-200/50'}`}>
                             <div className="px-3 py-1.5 flex flex-col items-start">
                                 <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Avg Gen</span>
-                                <span className="text-[10px] text-neutral-400 font-mono font-bold leading-none mt-1">{sessionStats.avgTime}s</span>
+                                <span className={`text-[10px] font-mono font-bold leading-none mt-1 ${theme === 'dark' ? 'text-neutral-400' : 'text-neutral-600'}`}>{sessionStats.avgTime}s</span>
                             </div>
                             <div className="px-3 py-1.5 flex flex-col items-start">
                                 <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Success %</span>
@@ -363,10 +382,10 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                             </div>
                             <div className="px-3 py-1.5 flex flex-col items-start">
                                 <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Attempts</span>
-                                <span className="text-[10px] text-neutral-400 font-mono font-bold leading-none mt-1">{sessionStats.totalAttempts}</span>
+                                <span className={`text-[10px] font-mono font-bold leading-none mt-1 ${theme === 'dark' ? 'text-neutral-400' : 'text-neutral-600'}`}>{sessionStats.totalAttempts}</span>
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 divide-x divide-neutral-900">
+                        <div className={`grid grid-cols-3 divide-x ${theme === 'dark' ? 'divide-neutral-900' : 'divide-neutral-200'}`}>
                              <div className="px-3 py-1.5 flex flex-col items-start">
                                 <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Err Rate</span>
                                 <span className={`text-[10px] font-mono leading-none mt-0.5 ${parseFloat(sessionStats.errorRate) > 0 ? 'text-red-500' : 'text-neutral-500'}`}>
@@ -375,18 +394,19 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                             </div>
                             <div className="px-3 py-1.5 flex flex-col items-start">
                                 <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Net Tokens</span>
-                                <span className="text-[10px] text-neutral-400 font-mono leading-none mt-0.5">{sessionStats.totalTokens.toLocaleString()}</span>
+                                <span className={`text-[10px] font-mono leading-none mt-0.5 ${theme === 'dark' ? 'text-neutral-400' : 'text-neutral-600'}`}>{sessionStats.totalTokens.toLocaleString()}</span>
                             </div>
                             <div className="px-3 py-1.5 flex flex-col items-start">
                                 <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Failures</span>
-                                <span className={`text-[10px] font-mono leading-none mt-0.5 ${sessionStats.totalFailures > 0 ? 'text-red-900' : 'text-neutral-700'}`}>{sessionStats.totalFailures}</span>
+                                <span className={`text-[10px] font-mono leading-none mt-0.5 ${sessionStats.totalFailures > 0 ? 'text-red-900' : 'text-neutral-400'}`}>{sessionStats.totalFailures}</span>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {/* CHART */}
-                <div className="flex-none h-20 md:h-28 w-full bg-neutral-900/10 relative bg-black">
+                <div className={`flex-none h-20 md:h-28 w-full relative transition-colors duration-500
+                    ${theme === 'dark' ? 'bg-neutral-900/10 bg-black' : 'bg-neutral-50/50 bg-white'}`}>
                      <StatsChart data={tpsHistory} label="" isLive={isGenerating} />
                 </div>
             </div>
@@ -409,6 +429,7 @@ interface TerminalProps {
   mobileTab?: 'a' | 'b'; 
   allowInteraction?: boolean;
   stats: GlobalStats;
+  theme?: 'dark' | 'light';
 }
 
 export const Terminal: React.FC<TerminalProps> = ({ 
@@ -421,7 +442,8 @@ export const Terminal: React.FC<TerminalProps> = ({
     isSelectionMode,
     mobileTab = 'a',
     allowInteraction = true,
-    stats
+    stats,
+    theme = 'dark'
 }) => {
     const sessionStats = useMemo(() => {
         const generationTimes = history
@@ -488,6 +510,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                         className={`${mobileTab === 'b' ? 'hidden lg:flex' : 'flex'}`}
                         allowInteraction={allowInteraction}
                         sessionStats={sessionStats}
+                        theme={theme}
                     />
                     <div className="w-px bg-neutral-900 flex-none z-10 hidden lg:block" />
                     <TerminalPanel 
@@ -503,6 +526,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                         className={`${mobileTab === 'a' ? 'hidden lg:flex' : 'flex'}`}
                         allowInteraction={allowInteraction}
                         sessionStats={sessionStats}
+                        theme={theme}
                     />
                 </>
             ) : (
@@ -518,6 +542,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                     overlayPosition="inset-x-0"
                     allowInteraction={allowInteraction}
                     sessionStats={sessionStats}
+                    theme={theme}
                 />
             )}
         </div>
