@@ -11,6 +11,8 @@ import { generateNextSpinner } from './services/geminiService';
 import { generateExportPack } from './utils/exportService'; 
 import { SpinnerData, CandidateState, GlobalStats } from './types';
 
+import { LineageView } from './components/LineageView';
+
 // Initial seed code: Material Design 3 Circular Progress Indicator
 const PROGENITOR_CODE = `
   p.setup = () => {
@@ -236,6 +238,9 @@ export default function App() {
       if (exportState) return;
       
       const winner = candidates[variant].data!;
+      // Track parent for lineage
+      winner.parentId = history[history.length - 1]?.id;
+
       setHistory(prev => [...prev, winner]);
       setCurrentIndex(prev => prev + 1); // Move to the NEXT phantom slot
       handleEvolve(winner);
@@ -396,17 +401,6 @@ export default function App() {
 
   const hasApiKey = !!process.env.GEMINI_API_KEY;
 
-  if (!hasApiKey) {
-      return (
-          <div className="min-h-screen bg-black text-neutral-400 flex items-center justify-center p-8 font-mono">
-              <div className="max-w-md text-center space-y-4">
-                  <h1 className="text-xl font-bold text-white">SYSTEM_HALT</h1>
-                  <p>API_KEY missing. Process terminated.</p>
-              </div>
-          </div>
-      )
-  }
-
   return (
     <div className={`h-screen font-sans flex flex-col overflow-hidden relative transition-colors duration-700
       ${theme === 'dark' ? 'bg-[#020202] text-neutral-400' : 'bg-neutral-50 text-neutral-600'}`}>
@@ -456,6 +450,13 @@ export default function App() {
 
             {/* THEME & VIEW MODES (NEW) */}
             <div className="flex items-center gap-2 mr-2 md:mr-6">
+                <ModernToggle 
+                    active={lineageOpen} 
+                    label="Lineage" 
+                    icon="🌲" 
+                    onClick={() => setLineageOpen(!lineageOpen)}
+                    activeColor="bg-green-600"
+                />
                 <ModernToggle 
                     active={theme === 'light'} 
                     label="Light" 
@@ -764,21 +765,60 @@ export default function App() {
                 )}
             </>
         )}
-    </div>
-
-                {/* Phone Bottom Navigation (Lumia Style) */}
+                    {/* Phone Bottom Navigation (Lumia Style) */}
                 {viewLayout === 'phone' && (
-                    <div className={`flex-none h-14 flex items-center justify-around z-50 border-t pointer-events-none pb-2 transition-colors duration-500
+                    <div className={`flex-none h-14 flex items-center justify-around z-50 border-t pointer-events-auto pb-2 transition-colors duration-500
                         ${theme === 'dark' ? 'bg-black border-neutral-900/50' : 'bg-white border-neutral-200'}`}>
-                        <span className={`text-xl transition-colors ${theme === 'dark' ? 'text-neutral-700' : 'text-neutral-300'}`}>←</span>
-                        <div className={`w-7 h-7 border-2 rounded-full flex items-center justify-center transition-colors
-                            ${theme === 'dark' ? 'border-neutral-700' : 'border-neutral-300'}`}>
+                        <button 
+                            onClick={actions.onPrev}
+                            disabled={currentIndex === 0}
+                            className={`text-xl transition-colors ${theme === 'dark' ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-black'} disabled:opacity-20`}
+                        >
+                            ←
+                        </button>
+                        <button 
+                            onClick={() => setLineageOpen(true)}
+                            className={`w-7 h-7 border-2 rounded-full flex items-center justify-center transition-all active:scale-95
+                                ${theme === 'dark' ? 'border-neutral-700 hover:border-white' : 'border-neutral-300 hover:border-black'}`}>
                              <div className={`w-1.5 h-1.5 rounded-px transition-colors ${theme === 'dark' ? 'bg-neutral-700' : 'bg-neutral-300'}`} />
-                        </div>
-                        <span className={`text-xl transition-colors ${theme === 'dark' ? 'text-neutral-700' : 'text-neutral-300'}`}>🔍</span>
+                        </button>
+                        <button 
+                             onClick={actions.onNext}
+                             disabled={currentIndex === maxIndex}
+                             className={`text-xl transition-colors ${theme === 'dark' ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-black'} disabled:opacity-20`}>
+                            →
+                        </button>
                     </div>
                 )}
            </div>
+
+           <LineageView 
+                isOpen={lineageOpen} 
+                onClose={() => setLineageOpen(false)} 
+                history={history}
+                currentIndex={currentIndex}
+                onSelect={(idx) => {
+                    setCurrentIndex(idx);
+                    setLineageOpen(false);
+                }}
+                theme={theme}
+            />
+
+            {/* ERROR TOAST (If API Key Missing) */}
+            <AnimatePresence>
+                {!hasApiKey && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white px-6 py-2 rounded-full font-mono text-[10px] font-bold shadow-2xl flex items-center gap-3 border-2 border-red-400"
+                    >
+                        <span className="animate-pulse">⚠️</span>
+                        <span>API_KEY_MISSING</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+      </div>
       </div>
 
         {/* EXPORT PROGRESS OVERLAY */}
