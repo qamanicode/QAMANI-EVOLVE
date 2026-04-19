@@ -289,7 +289,27 @@ export default function App() {
       }, 
   };
 
-  const hasApiKey = !!process.env.API_KEY;
+  const handleExport = async (platform: 'windows' | 'linux' | 'chrome') => {
+      if (!currentHistorySpinner) return;
+      
+      setExportState({ variant: 'a', progress: 0 }); // variant is a dummy here
+      
+      try {
+          await generateExportPack({
+              code: currentHistorySpinner.p5Code,
+              platform,
+              filename: `qamani_evolve_${currentHistorySpinner.id}`,
+              onProgress: (p) => setExportState(prev => prev ? { ...prev, progress: p } : null)
+          });
+      } catch (err) {
+          console.error("Export failed", err);
+          alert("Export failed. Check console for details.");
+      } finally {
+          setExportState(null);
+      }
+  };
+
+  const hasApiKey = !!process.env.GEMINI_API_KEY;
 
   if (!hasApiKey) {
       return (
@@ -378,10 +398,39 @@ export default function App() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {!isSelectionMode ? (
+                {!isSelectionMode ? (
             // SINGLE VIEW
             <div className="w-full h-full relative flex items-center justify-center">
                 <P5Canvas code={currentHistorySpinner?.p5Code || ""} />
+                
+                {hasStarted && !isGenerating && (
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 sm:scale-100 origin-top-right">
+                        <div className="bg-black/40 backdrop-blur-md border border-neutral-800 p-2 rounded-lg flex flex-col gap-1 shadow-2xl">
+                            <span className="text-[7px] text-neutral-500 uppercase tracking-[0.3em] pl-1 mb-1">Export Pack</span>
+                            <button 
+                                onClick={() => handleExport('chrome')}
+                                className="px-3 py-1.5 flex items-center gap-2 text-[9px] text-neutral-300 hover:text-white hover:bg-white/5 transition-all rounded font-mono uppercase tracking-wider group"
+                            >
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 group-hover:shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all" />
+                                Chrome Cursor
+                            </button>
+                            <button 
+                                onClick={() => handleExport('windows')}
+                                className="px-3 py-1.5 flex items-center gap-2 text-[9px] text-neutral-300 hover:text-white hover:bg-white/5 transition-all rounded font-mono uppercase tracking-wider group"
+                            >
+                                <div className="w-1.5 h-1.5 rounded-full bg-purple-500 group-hover:shadow-[0_0_8px_rgba(168,85,247,0.5)] transition-all" />
+                                Windows Cursor
+                            </button>
+                            <button 
+                                onClick={() => handleExport('linux')}
+                                className="px-3 py-1.5 flex items-center gap-2 text-[9px] text-neutral-300 hover:text-white hover:bg-white/5 transition-all rounded font-mono uppercase tracking-wider group"
+                            >
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 group-hover:shadow-[0_0_8px_rgba(249,115,22,0.5)] transition-all" />
+                                Linux Spinner
+                            </button>
+                        </div>
+                    </div>
+                )}
                 
                 {hasStarted && currentIndex < maxIndex && (
                      <div className="absolute bottom-8 right-8 pointer-events-none">
@@ -497,6 +546,37 @@ export default function App() {
                     )}
                 </div>
             </>
+        )}
+
+        {/* EXPORT PROGRESS OVERLAY */}
+        {exportState && (
+            <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center">
+                <div className="w-64 space-y-6">
+                    <div className="space-y-1 text-center">
+                        <div className="flex items-center justify-center gap-3">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" />
+                            <h2 className="text-white font-mono text-[10px] uppercase tracking-[0.4em]">Packaging Assets</h2>
+                        </div>
+                        <p className="text-neutral-500 text-[8px] uppercase tracking-widest">Compiling high-accuracy frames</p>
+                    </div>
+                    
+                    <div className="relative h-[2px] w-full bg-neutral-900 rounded-full overflow-hidden">
+                        <div 
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+                            style={{ width: `${exportState.progress}%` }}
+                        />
+                    </div>
+                    
+                    <div className="flex justify-between items-center font-mono">
+                        <span className="text-[8px] text-neutral-600 uppercase tracking-widest">Progress</span>
+                        <span className="text-[10px] text-white tabular-nums tracking-widest">{exportState.progress}%</span>
+                    </div>
+                </div>
+                
+                <div className="absolute bottom-12 text-center space-y-2 opacity-40">
+                    <p className="text-[7px] text-neutral-500 uppercase tracking-[0.5em] animate-pulse">Establishing Kinetic Integrity</p>
+                </div>
+            </div>
         )}
       </div>
 

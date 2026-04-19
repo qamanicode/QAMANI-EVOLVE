@@ -76,7 +76,12 @@ a, button, [role="button"] {
 }
 `;
 
-export const generateExportPack = async ({ code, platform, filename }: ExportConfig) => {
+export const generateExportPack = async ({ 
+    code, 
+    platform, 
+    filename, 
+    onProgress 
+}: ExportConfig & { onProgress?: (percent: number) => void }) => {
   return new Promise<void>((resolve, reject) => {
     // 1. Setup a hidden container for the ghost p5 instance
     const container = document.createElement('div');
@@ -179,6 +184,10 @@ export const generateExportPack = async ({ code, platform, filename }: ExportCon
             const base64Data = dataUrl.split(',')[1]; // Remove "data:image/png;base64,"
             
             frames.push(base64Data);
+
+            if (onProgress) {
+                onProgress(Math.round(((i + 1) / frameCount) * 100));
+            }
         }
 
         // 4. Package for Platform
@@ -190,12 +199,13 @@ export const generateExportPack = async ({ code, platform, filename }: ExportCon
                 folder?.file(name, f, { base64: true });
             });
             folder?.file("INSTRUCTIONS.txt", 
-                "1. These are raw PNG frames of your evolved spinner.\n" +
-                "2. To create a Windows .ani cursor:\n" +
-                "   - Download a tool like 'RealWorld Cursor Editor' (free).\n" +
-                "   - Import these frames.\n" +
-                "   - Save as .ani.\n" +
-                "3. Go to Windows Settings > Personalization > Themes > Mouse Cursor and browse for your new .ani file."
+                "EXPORT PACK: WINDOWS ANIME CURSOR (HIGH ACCURACY)\n" +
+                "================================================\n" +
+                "1. Frames: 30-frame sequence at 32x32px.\n" +
+                "2. Seamless Loop: Assets are timed for exactly 2.0s duration.\n" +
+                "3. Recommendation: Use 'RealWorld Cursor Editor' or 'AniCursor' to import PNGs.\n" +
+                "4. Setting: Set frame duration to 6-7 ticks (approx 15fps) for correct kinetic speed.\n" +
+                "5. Installation: Windows Settings > Cursors > Browse for your .ani file."
             );
         } 
         else if (platform === 'linux') {
@@ -209,9 +219,14 @@ export const generateExportPack = async ({ code, platform, filename }: ExportCon
             folder?.file(`${themeName}.script`, generatePlymouthScript(frameCount));
             folder?.file(`${themeName}.plymouth`, generatePlymouthThemeFile(themeName));
             folder?.file("install_help.txt", 
-                "To install this Plymouth theme:\n" +
-                "1. Copy this folder to /usr/share/plymouth/themes/\n" +
-                "2. Run: sudo plymouth-set-default-theme -R evolved_spinner"
+                "EXPORT PACK: LINUX PLYMOUTH SPINNER (HIGH ACCURACY)\n" +
+                "==================================================\n" +
+                "1. Frames: 60-frame high-density sequence at 64x64px.\n" +
+                "2. Script: Included .script file handles high-speed refresh with kinetic interpolation.\n" +
+                "3. Installation:\n" +
+                "   a. Copy this folder to /usr/share/plymouth/themes/\n" +
+                "   b. sudo plymouth-set-default-theme -R evolved_spinner\n" +
+                "   c. sudo update-initramfs -u"
             );
         }
         else if (platform === 'chrome') {
