@@ -4,6 +4,7 @@
 */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { P5Canvas, P5CanvasRef } from './components/P5Canvas';
 import { Terminal, parsePartialJson } from './components/Terminal';
 import { generateNextSpinner } from './services/geminiService';
@@ -309,6 +310,46 @@ export default function App() {
       }
   };
 
+  const isInteractive = !isGenerating && !exportState;
+  const maxIndex = candidates ? history.length : history.length - 1;
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+        // Don't trigger if user is typing (not that we have inputs, but good practice)
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+        // E for Evolve
+        if (e.key.toLowerCase() === 'e' && !isGenerating && !exportState && !isSelectionMode) {
+            actions.onMutate();
+        }
+
+        // 1 or 2 for selection
+        if (isSelectionMode && !isGenerating && !exportState) {
+            if (e.key === '1') handleSelect('a');
+            if (e.key === '2') handleSelect('b');
+        }
+
+        // Arrows for navigation
+        if (e.key === 'ArrowLeft') {
+            if (currentIndex > 0) actions.onPrev();
+        }
+        if (e.key === 'ArrowRight') {
+            if (currentIndex < maxIndex) actions.onNext();
+        }
+
+        // Escape to cancel evolution or go back
+        if (e.key === 'Escape') {
+            if (isSelectionMode && !isGenerating) {
+                setCandidates(null);
+            }
+        }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isGenerating, exportState, isSelectionMode, currentIndex, maxIndex, actions, candidates]);
+
   const hasApiKey = !!process.env.GEMINI_API_KEY;
 
   if (!hasApiKey) {
@@ -321,9 +362,6 @@ export default function App() {
           </div>
       )
   }
-
-  const isInteractive = !isGenerating && !exportState;
-  const maxIndex = candidates ? history.length : history.length - 1;
 
   return (
     <div className="h-screen bg-[#020202] text-neutral-400 font-sans flex flex-col overflow-hidden relative">
@@ -362,7 +400,9 @@ export default function App() {
                         &lt;
                     </button>
                     
-                    <button 
+                    <motion.button 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={isSelectionMode ? undefined : actions.onMutate}
                         disabled={isSelectionMode || isGenerating || !!exportState}
                         className={`
@@ -378,7 +418,7 @@ export default function App() {
                             : (isSelectionMode ? <span className="hidden md:inline">SELECT ON CANVAS</span> : "EVOLVE")
                         }
                         {isSelectionMode && <span className="md:hidden">SELECT</span>}
-                    </button>
+                    </motion.button>
 
                     <button 
                         onClick={actions.onNext}
@@ -387,6 +427,28 @@ export default function App() {
                     >
                         &gt;
                     </button>
+                </div>
+            )}
+
+            {/* KEYBOARD SHORTCUTS HINT */}
+            {hasStarted && !isGenerating && !exportState && (
+                <div className="absolute top-16 left-4 z-30 pointer-events-none hidden md:block">
+                    <div className="flex flex-col gap-1 opacity-20 hover:opacity-100 transition-opacity duration-500">
+                        <div className="flex items-center gap-2 group">
+                            <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-[8px] font-mono text-neutral-400 group-hover:text-blue-400 transition-colors">E</kbd>
+                            <span className="text-[8px] uppercase tracking-widest text-neutral-600 font-mono">Evolve</span>
+                        </div>
+                        <div className="flex items-center gap-2 group">
+                            <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-[8px] font-mono text-neutral-400 group-hover:text-purple-400 transition-colors">ARROWS</kbd>
+                            <span className="text-[8px] uppercase tracking-widest text-neutral-600 font-mono">Navigate</span>
+                        </div>
+                        {isSelectionMode && (
+                             <div className="flex items-center gap-2 group animate-pulse">
+                                <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-[8px] font-mono text-neutral-400 group-hover:text-white transition-colors">1/2</kbd>
+                                <span className="text-[8px] uppercase tracking-widest text-neutral-600 font-mono">Select</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
       </div>
@@ -599,22 +661,28 @@ export default function App() {
         {/* LANDING OVERLAY */}
         {!hasStarted && (
             <div className="absolute inset-0 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 z-50 border-t border-neutral-800">
-                <div className="animate-in fade-in zoom-in duration-700 slide-in-from-bottom-4 flex flex-col items-center">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="animate-in fade-in zoom-in duration-700 slide-in-from-bottom-4 flex flex-col items-center"
+                >
                     <h1 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tighter max-w-4xl leading-none">
                         QAMANI <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 animate-gradient-text">EVOLVE</span>
                     </h1>
                     
-                    <button 
+                    <motion.button 
+                        whileHover={{ scale: 1.05, shadow: "0 0 30px rgba(255,255,255,0.3)" }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={handleStart}
-                        className="px-8 py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] ring-offset-2 ring-offset-black focus:ring-2 focus:ring-white outline-none"
+                        className="px-8 py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 ring-offset-2 ring-offset-black focus:ring-2 focus:ring-white outline-none"
                     >
                         START EVOLVING
-                    </button>
+                    </motion.button>
                     
                     <div className="mt-8 text-[10px] text-neutral-600 font-mono uppercase tracking-widest hover:text-neutral-500 transition-colors">
                         Created by <span className="text-neutral-400 font-bold">QAMANI</span>
                     </div>
-                </div>
+                </motion.div>
             </div>
         )}
       </div>

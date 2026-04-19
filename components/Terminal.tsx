@@ -4,10 +4,49 @@
 */
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { SpinnerData, CandidateState, GlobalStats } from '../types';
 import { StatsChart } from './StatsChart';
 
 // --- Helper Functions ---
+
+const highlightCode = (code: string) => {
+    if (!code) return null;
+    
+    // Safety check for empty code
+    if (code.trim().length === 0) return <div className="text-neutral-700 italic">// QAMANI code stream initializing...</div>;
+
+    const lines = code.split('\n');
+    return lines.map((line, i) => {
+        // Simple highlighting regex
+        let processedLine = line
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        // Highlight p.methods
+        processedLine = processedLine.replace(/(p\.[a-zA-Z0-9]+)/g, '<span class="text-blue-400 font-bold">$1</span>');
+        
+        // Keywords
+        processedLine = processedLine.replace(/\b(let|const|var|function|return|if|else|for|while|try|catch|new|import|export|from|p|p5)\b/g, '<span class="text-purple-400">$1</span>');
+        
+        // Strings
+        processedLine = processedLine.replace(/(['"`].*?['"`])/g, '<span class="text-green-400">$1</span>');
+        
+        // Numbers
+        processedLine = processedLine.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="text-orange-300">$1</span>');
+
+        // Comments
+        processedLine = processedLine.replace(/(\/\/.*)/g, '<span class="text-neutral-600 italic font-sans">$1</span>');
+
+        return (
+            <div key={i} className="flex gap-4 group/line border-l-2 border-transparent hover:border-blue-500/30 hover:bg-white/5 transition-all">
+                <span className="w-8 flex-none text-neutral-800 text-right select-none group-hover/line:text-neutral-500 transition-colors bg-black font-mono text-[9px] py-px pr-2">{i + 1}</span>
+                <span dangerouslySetInnerHTML={{ __html: processedLine }} className="flex-1 whitespace-pre-wrap break-all py-px" />
+            </div>
+        );
+    });
+};
 
 export const parsePartialJson = (jsonStr: string) => {
     const result = { mutationName: "", reasoning: "", p5Code: "" };
@@ -172,48 +211,63 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                 CODE OVERLAY (Fixed Position to break out of containers) 
                 Sits behind metrics (z-30) but covers spinner.
             */}
-            <div 
-                className={`fixed ${overlayPosition} top-14 bottom-0 bg-[#050505]/95 backdrop-blur-md z-30 transition-transform duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] flex flex-col pt-0 pb-56 md:pb-80 px-0 border-b border-neutral-800
-                ${isCodeOpen ? 'translate-y-0 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' : 'translate-y-[calc(100%+20px)]'}`}
-            >
-                 {/* NEW HEADER in Overlay (Acts as Collapse Trigger) */}
-                 <div 
-                    onClick={() => setIsCodeOpen(false)}
-                    className="flex-none h-10 flex items-center justify-between px-3 md:px-6 border-b border-neutral-800 cursor-pointer select-none bg-neutral-900/40 hover:bg-neutral-900 transition-colors group/header"
-                >
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-neutral-500 rotate-180 transition-colors group-hover/header:text-neutral-400">
-                            ▲
-                        </span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 group-hover/header:text-neutral-200 transition-colors">
-                            Collapse Code Stream
-                        </span>
-                        {isGenerating && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse ml-2" />}
-                    </div>
+            <AnimatePresence>
+                {isCodeOpen && (
+                    <motion.div 
+                        initial={{ y: '100%' }}
+                        animate={{ y: 0 }}
+                        exit={{ y: '110%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 150 }}
+                        className={`fixed ${overlayPosition} top-14 bottom-0 bg-[#050505]/95 backdrop-blur-xl z-[60] flex flex-col pt-0 pb-56 md:pb-80 px-0 border-b border-neutral-800 shadow-[0_-20px_60px_rgba(0,0,0,1)]`}
+                    >
+                         {/* NEW HEADER in Overlay (Acts as Collapse Trigger) */}
+                         <div 
+                            onClick={() => setIsCodeOpen(false)}
+                            className="flex-none h-11 flex items-center justify-between px-3 md:px-6 border-b border-neutral-800 cursor-pointer select-none bg-neutral-900 border-t border-neutral-800 hover:bg-neutral-800/80 transition-colors group/header"
+                        >
+                            <div className="flex items-center gap-3">
+                                <motion.span 
+                                    animate={{ y: [0, -2, 0] }}
+                                    transition={{ repeat: Infinity, duration: 2 }}
+                                    className="text-[10px] text-blue-500 font-bold"
+                                >
+                                    ▼
+                                </motion.span>
+                                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-300 group-hover/header:text-white transition-colors">
+                                    Collapse Source Code
+                                </span>
+                                {isGenerating && <div className="flex gap-1 items-center px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 ml-2">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                                    <span className="text-[8px] text-blue-400 font-bold tracking-widest uppercase">Streaming</span>
+                                </div>}
+                            </div>
 
-                    <div className="flex items-center gap-4">
-                        {codeToDisplay && <span className="text-[10px] font-mono text-neutral-600 hidden sm:inline">{codeToDisplay.length} bytes</span>}
-                        {showControls && data?.p5Code && (
-                            <button 
-                                onClick={handleDownload}
-                                disabled={!allowInteraction}
-                                tabIndex={allowInteraction ? 0 : -1}
-                                className="flex items-center gap-2 px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all text-[9px] uppercase tracking-wider font-medium border border-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <span>JS</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </button>
-                        )}
-                    </div>
-                 </div>
+                            <div className="flex items-center gap-4">
+                                {codeToDisplay && <span className="text-[8px] font-mono text-neutral-600 uppercase tracking-widest bg-black px-2 py-1 rounded border border-neutral-800">{codeToDisplay.length} bytes</span>}
+                                {showControls && data?.p5Code && (
+                                    <button 
+                                        onClick={handleDownload}
+                                        disabled={!allowInteraction}
+                                        tabIndex={allowInteraction ? 0 : -1}
+                                        className="flex items-center gap-2 px-3 py-1 rounded-sm bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-all text-[9px] uppercase tracking-[0.1em] font-bold border border-neutral-700 disabled:opacity-50"
+                                    >
+                                        <span>Download Archive</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    </button>
+                                )}
+                            </div>
+                         </div>
 
-                 <pre 
-                    ref={codeScrollRef}
-                    className="flex-1 overflow-auto custom-scrollbar text-[10px] md:text-xs leading-relaxed text-neutral-400 font-mono whitespace-pre-wrap break-all p-4 md:px-8 bg-[#0a0a0a]"
-                 >
-                    <code>{codeToDisplay || "// QAMANI code generating..."}</code>
-                </pre>
-            </div>
+                         <div  
+                            className="flex-1 overflow-auto custom-scrollbar bg-[#020202] p-0"
+                         >
+                            <div ref={codeScrollRef} className="p-4 md:px-8 py-8 font-mono text-[10px] md:text-xs">
+                                {highlightCode(codeToDisplay)}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* 
                 BOTTOM CONTROL GROUP (Z-40 to stay above the code overlay)

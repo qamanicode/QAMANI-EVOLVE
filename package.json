@@ -17,12 +17,13 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "recharts": "^3.5.1",
-    "react-dom": "^19.2.1",
-    "react": "^19.2.1",
     "@google/genai": "^1.31.0",
+    "file-saver": "2.0.5",
     "jszip": "latest",
-    "file-saver": "2.0.5"
+    "motion": "^12.38.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "recharts": "^3.5.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

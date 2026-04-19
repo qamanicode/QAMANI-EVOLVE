@@ -4,6 +4,7 @@
 */
 
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { motion } from 'motion/react';
 
 // Declare p5 globally since we loaded it via CDN
 declare global {
@@ -219,9 +220,10 @@ export const P5Canvas = forwardRef<P5CanvasRef, P5CanvasProps>(({ code }, ref) =
   }, [code]);
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-hidden" ref={wrapperRef}>
-        <div 
+    <div className="w-full h-full flex items-center justify-center overflow-hidden cursor-none group" ref={wrapperRef}>
+        <motion.div 
           ref={canvasRef}
+          whileHover={{ scale: scale * 1.05 }}
           style={{ 
             width: '400px', 
             height: '400px', 
@@ -230,11 +232,17 @@ export const P5Canvas = forwardRef<P5CanvasRef, P5CanvasProps>(({ code }, ref) =
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'transform 0.3s ease-out' // Smooth scaling transition
+            transition: 'transform 0.3s cubic-bezier(0.19, 1, 0.22, 1)' 
           }}
         >
+            {/* Custom Crosshair Cursor */}
+            <div className="pointer-events-none absolute inset-0 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 border border-blue-500/50 rounded-full" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1px] h-6 bg-white/20" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-[1px] bg-white/20" />
+            </div>
             {/* The p5 canvas injects itself here */}
-        </div>
+        </motion.div>
     </div>
   );
 });
