@@ -8,7 +8,7 @@ import { P5Canvas, P5CanvasRef } from './components/P5Canvas';
 import { Terminal, parsePartialJson } from './components/Terminal';
 import { generateNextSpinner } from './services/geminiService';
 import { generateExportPack } from './utils/exportService'; 
-import { SpinnerData, CandidateState } from './types';
+import { SpinnerData, CandidateState, GlobalStats } from './types';
 
 // Initial seed code: Material Design 3 Circular Progress Indicator
 const PROGENITOR_CODE = `
@@ -114,6 +114,7 @@ export default function App() {
   const [candidates, setCandidates] = useState<{ a: CandidateState; b: CandidateState } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [stats, setStats] = useState<GlobalStats>({ attempts: 0, failures: 0 });
   
   const [exportState, setExportState] = useState<{ variant: 'a' | 'b', progress: number } | null>(null);
 
@@ -153,6 +154,7 @@ export default function App() {
 
     setIsGenerating(true);
     setGenerationStartTime(performance.now());
+    setStats(prev => ({ ...prev, attempts: prev.attempts + 1 }));
     
     const initialCandidateState = { buffer: "", data: null, tpsHistory: [] };
     const newCandidates = {
@@ -182,6 +184,7 @@ export default function App() {
 
     } catch (error) {
       console.error("Evolution failed", error);
+      setStats(prev => ({ ...prev, failures: prev.failures + 1 }));
       setCandidates(null);
     } finally {
       setIsGenerating(false);
@@ -510,24 +513,17 @@ export default function App() {
             isSelectionMode={isSelectionMode}
             mobileTab={mobileTab}
             allowInteraction={hasStarted}
+            stats={stats}
         />
 
         {/* LANDING OVERLAY */}
         {!hasStarted && (
             <div className="absolute inset-0 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 z-50 border-t border-neutral-800">
                 <div className="animate-in fade-in zoom-in duration-700 slide-in-from-bottom-4 flex flex-col items-center">
-                    <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tighter max-w-4xl leading-none">
+                    <h1 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tighter max-w-4xl leading-none">
                         QAMANI <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 animate-gradient-text">EVOLVE</span>
                     </h1>
                     
-                    <p className="text-sm md:text-base text-neutral-400 max-w-xl mb-8 leading-relaxed font-light">
-                        A new way to develop. A/B test real-time code generations.
-                        <br />
-                        <span className="text-white font-medium">Gemini 3 Flash</span> evolves the perfect kinetic art.
-                        <br />
-                        <span className="text-neutral-500 italic text-xs mt-2 block">Visual evolution at the speed of thought.</span>
-                    </p>
-
                     <button 
                         onClick={handleStart}
                         className="px-8 py-3 bg-white hover:bg-neutral-200 text-black font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] ring-offset-2 ring-offset-black focus:ring-2 focus:ring-white outline-none"

@@ -109,58 +109,106 @@ export const P5Canvas = forwardRef<P5CanvasRef, P5CanvasProps>(({ code }, ref) =
       // Sanitize the code: remove markdown backticks if present
       const cleanCode = code.replace(/```javascript/g, '').replace(/```/g, '').trim();
 
+      // Error rendering helper
+      const renderCanvasError = (p: any, title: string, message: string) => {
+        p.noLoop();
+        p.clear();
+        p.push();
+        p.resetMatrix();
+        
+        // Darkened backdrop
+        p.fill(0, 0, 0, 200);
+        p.noStroke();
+        p.rect(0, 0, 400, 400);
+
+        // Error Border
+        p.stroke(255, 50, 50);
+        p.strokeWeight(2);
+        p.noFill();
+        p.rect(10, 10, 380, 380);
+        
+        // Scanline effect (brutalist/technical feel)
+        p.stroke(255, 50, 50, 30);
+        p.strokeWeight(1);
+        for (let i = 20; i < 380; i += 4) {
+            p.line(20, i, 380, i);
+        }
+
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textFont('monospace');
+        
+        // Title
+        p.noStroke();
+        p.fill(255, 50, 50);
+        p.textSize(24);
+        p.textStyle(p.BOLD);
+        p.text(title, 200, 160);
+        
+        // Divider
+        p.stroke(255, 50, 50, 100);
+        p.line(100, 185, 300, 185);
+        
+        // Message
+        p.noStroke();
+        p.fill(200);
+        p.textSize(12);
+        p.textStyle(p.NORMAL);
+        p.text(message.toUpperCase().substring(0, 120), 200, 220, 300, 100);
+        
+        p.fill(255, 50, 50, 150);
+        p.textSize(9);
+        p.text("PROCESS_HALTED_FOR_INTEGRITY", 200, 350);
+        
+        p.pop();
+      };
+
       // Create a wrapper function for the sketch
-      // We wrap the AI generated code (which is the body) into a function (p) => { ... }
-      // eslint-disable-next-line no-new-func
-      const sketchFunction = new Function('p', cleanCode);
+      let sketchFunction: any;
+      let compilationError: string | null = null;
+      
+      try {
+        // eslint-disable-next-line no-new-func
+        sketchFunction = new Function('p', cleanCode);
+      } catch (compileErr) {
+        compilationError = (compileErr as Error).message;
+        console.error("Compilation error:", compileErr);
+      }
 
       // Initialize p5 in instance mode
-      // CRITICAL FIX: Append to canvasRef.current (inner div), not wrapperRef (outer div)
       p5InstanceRef.current = new window.p5((p: any) => {
-        // Safe defaults if the AI forgets them
         p.setup = () => {
           p.createCanvas(400, 400);
-          p.clear(); // Ensure transparent start
-        };
-        
-        // Execute the AI code which should override setup/draw
-        try {
-            sketchFunction(p);
+          p.clear();
+          
+          if (compilationError) {
+              renderCanvasError(p, "COMPILATION_ERR", compilationError);
+              return;
+          }
 
-            // Wrap p.draw to catch RUNTIME errors (like maxDepth undefined)
-            // The AI defines p.draw inside sketchFunction. We need to intercept it.
-            const originalDraw = p.draw;
-            if (originalDraw) {
-                p.draw = () => {
-                    try {
-                        originalDraw();
-                    } catch (drawErr) {
-                        console.error("Runtime error in p5 draw loop:", drawErr);
-                        p.noLoop(); // Stop the loop to save CPU
-                        p.clear();
-                        p.translate(0, 0); // Reset matrix
-                        p.fill(255, 50, 50);
-                        p.noStroke();
-                        p.textAlign(p.CENTER, p.CENTER);
-                        p.textSize(16);
-                        p.text("RUNTIME_ERR", 200, 180);
-                        p.textSize(10);
-                        p.text((drawErr as Error).message.substring(0, 40), 200, 210);
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("Error executing generated p5 code:", e);
-            p.clear();
-            p.fill(150);
-            p.noStroke();
-            p.textAlign(p.LEFT, p.TOP);
-            p.textSize(12);
-            p.text("RENDER_ERR", 10, 10);
-        }
+          // Execute the AI code
+          try {
+              sketchFunction(p);
+
+              // Intercept p.draw for runtime errors
+              const originalDraw = p.draw;
+              if (originalDraw) {
+                  p.draw = () => {
+                      try {
+                          originalDraw();
+                      } catch (drawErr) {
+                          console.error("Runtime error:", drawErr);
+                          renderCanvasError(p, "RUNTIME_ERR", (drawErr as Error).message);
+                      }
+                  };
+              }
+          } catch (execErr) {
+              console.error("Execution error:", execErr);
+              renderCanvasError(p, "EXECUTION_ERR", (execErr as Error).message);
+          }
+        };
       }, canvasRef.current);
     } catch (err) {
-      console.error("Failed to compile p5 code:", err);
+      console.error("Critical failure initializing p5 component:", err);
     }
 
     return () => {

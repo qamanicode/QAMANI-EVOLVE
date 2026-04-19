@@ -4,7 +4,7 @@
 */
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { SpinnerData, CandidateState } from '../types';
+import { SpinnerData, CandidateState, GlobalStats } from '../types';
 import { StatsChart } from './StatsChart';
 
 // --- Helper Functions ---
@@ -59,6 +59,14 @@ interface TerminalPanelProps {
     overlayPosition?: string;
     className?: string;
     allowInteraction?: boolean;
+    sessionStats?: {
+        avgTime: string;
+        successRate: string;
+        errorRate: string;
+        totalAttempts: number;
+        totalTokens: number;
+        totalFailures: number;
+    };
 }
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({
@@ -72,7 +80,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
     showControls,
     overlayPosition = "inset-x-0",
     className = "",
-    allowInteraction = true
+    allowInteraction = true,
+    sessionStats
 }) => {
     const [liveElapsed, setLiveElapsed] = useState(0);
     const [isCodeOpen, setIsCodeOpen] = useState(false);
@@ -256,33 +265,71 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
 
                 {/* METRICS ROW */}
                 <div className="flex-none grid grid-cols-3 divide-x divide-neutral-900 border-y border-neutral-900 mt-2 bg-black">
-                    <div className="p-2 md:p-4 flex flex-col justify-end items-end text-right">
+                    <div className="p-2 md:p-3 flex flex-col justify-end items-end text-right">
                         <span className="text-[8px] md:text-[9px] text-neutral-600 uppercase tracking-[0.2em] mb-1">Time</span>
                         <div className="flex items-baseline gap-1 justify-end w-full">
-                            <span className="text-lg sm:text-2xl md:text-4xl xl:text-5xl font-light text-white font-mono tracking-tighter">
+                            <span className="text-lg sm:text-xl md:text-3xl xl:text-4xl font-light text-white font-mono tracking-tighter">
                                 {timeValue}
                             </span>
                             <span className="text-[10px] md:text-xs text-neutral-600 font-mono">s</span>
                         </div>
                     </div>
-                    <div className="p-2 md:p-4 flex flex-col justify-end items-end text-right">
+                    <div className="p-2 md:p-3 flex flex-col justify-end items-end text-right">
                         <span className="text-[8px] md:text-[9px] text-neutral-600 uppercase tracking-[0.2em] mb-1">Speed</span>
                         <div className="flex items-baseline gap-1 justify-end w-full">
-                            <span className={`text-lg sm:text-2xl md:text-4xl xl:text-5xl font-light font-mono tracking-tighter ${isGenerating ? 'text-blue-400 animate-pulse' : 'text-white'}`}>
+                            <span className={`text-lg sm:text-xl md:text-3xl xl:text-4xl font-light font-mono tracking-tighter ${isGenerating ? 'text-blue-400 animate-pulse' : 'text-white'}`}>
                                 {tpsValue}
                             </span>
                             <span className="text-[10px] md:text-xs text-neutral-600 font-mono">tps</span>
                         </div>
                     </div>
-                    <div className="p-2 md:p-4 flex flex-col justify-end items-end text-right">
+                    <div className="p-2 md:p-3 flex flex-col justify-end items-end text-right">
                         <span className="text-[8px] md:text-[9px] text-neutral-600 uppercase tracking-[0.2em] mb-1">Tokens</span>
                         <div className="flex items-baseline gap-1 justify-end w-full">
-                            <span className="text-lg sm:text-2xl md:text-4xl xl:text-5xl font-light text-white font-mono tracking-tighter">
+                            <span className="text-lg sm:text-xl md:text-3xl xl:text-4xl font-light text-white font-mono tracking-tighter">
                                 {totalTokens}
                             </span>
                         </div>
                     </div>
                 </div>
+
+                {/* DIAGNOSTICS HUB (New) */}
+                {sessionStats && (
+                    <div className="flex-none bg-[#050505] border-b border-neutral-900 pb-1">
+                        <div className="grid grid-cols-3 divide-x divide-neutral-900 border-b border-neutral-900/50">
+                            <div className="px-3 py-1.5 flex flex-col items-start">
+                                <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Avg Gen</span>
+                                <span className="text-[10px] text-neutral-400 font-mono font-bold leading-none mt-1">{sessionStats.avgTime}s</span>
+                            </div>
+                            <div className="px-3 py-1.5 flex flex-col items-start">
+                                <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Success %</span>
+                                <span className={`text-[10px] font-mono font-bold leading-none mt-1 ${parseFloat(sessionStats.successRate) > 90 ? 'text-green-500' : 'text-yellow-500'}`}>
+                                    {sessionStats.successRate}%
+                                </span>
+                            </div>
+                            <div className="px-3 py-1.5 flex flex-col items-start">
+                                <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Attempts</span>
+                                <span className="text-[10px] text-neutral-400 font-mono font-bold leading-none mt-1">{sessionStats.totalAttempts}</span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 divide-x divide-neutral-900">
+                             <div className="px-3 py-1.5 flex flex-col items-start">
+                                <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Err Rate</span>
+                                <span className={`text-[10px] font-mono leading-none mt-0.5 ${parseFloat(sessionStats.errorRate) > 0 ? 'text-red-500' : 'text-neutral-500'}`}>
+                                    {sessionStats.errorRate}%
+                                </span>
+                            </div>
+                            <div className="px-3 py-1.5 flex flex-col items-start">
+                                <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Net Tokens</span>
+                                <span className="text-[10px] text-neutral-400 font-mono leading-none mt-0.5">{sessionStats.totalTokens.toLocaleString()}</span>
+                            </div>
+                            <div className="px-3 py-1.5 flex flex-col items-start">
+                                <span className="text-[7px] text-neutral-600 uppercase font-mono tracking-wider">Failures</span>
+                                <span className={`text-[10px] font-mono leading-none mt-0.5 ${sessionStats.totalFailures > 0 ? 'text-red-900' : 'text-neutral-700'}`}>{sessionStats.totalFailures}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* CHART */}
                 <div className="flex-none h-20 md:h-28 w-full bg-neutral-900/10 relative bg-black">
@@ -307,6 +354,7 @@ interface TerminalProps {
   isSelectionMode: boolean;
   mobileTab?: 'a' | 'b'; 
   allowInteraction?: boolean;
+  stats: GlobalStats;
 }
 
 export const Terminal: React.FC<TerminalProps> = ({ 
@@ -318,8 +366,38 @@ export const Terminal: React.FC<TerminalProps> = ({
     currentIndex,
     isSelectionMode,
     mobileTab = 'a',
-    allowInteraction = true
+    allowInteraction = true,
+    stats
 }) => {
+    const sessionStats = useMemo(() => {
+        const generationTimes = history
+            .filter(h => h.generationTimeMs > 0)
+            .map(h => h.generationTimeMs);
+        
+        const avg = generationTimes.length > 0 
+            ? (generationTimes.reduce((a, b) => a + b, 0) / generationTimes.length / 1000).toFixed(2)
+            : "0.00";
+        
+        const err = stats.attempts > 0 
+            ? ((stats.failures / stats.attempts) * 100).toFixed(1)
+            : "0.0";
+            
+        const success = stats.attempts > 0
+            ? (((stats.attempts - stats.failures) / stats.attempts) * 100).toFixed(1)
+            : "0.0";
+            
+        const totalTokens = history.reduce((acc, h) => acc + (h.totalTokens || 0), 0);
+            
+        return {
+            avgTime: avg,
+            errorRate: err,
+            successRate: success,
+            totalAttempts: stats.attempts,
+            totalTokens: totalTokens,
+            totalFailures: stats.failures
+        };
+    }, [history, stats]);
+
   return (
     <div className="flex flex-col h-full bg-[#0a0a0a] font-mono text-sm border-t border-neutral-800">
         <style>{`
@@ -355,6 +433,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                         overlayPosition="left-0 w-full lg:w-1/2 border-r border-neutral-900"
                         className={`${mobileTab === 'b' ? 'hidden lg:flex' : 'flex'}`}
                         allowInteraction={allowInteraction}
+                        sessionStats={sessionStats}
                     />
                     <div className="w-px bg-neutral-900 flex-none z-10 hidden lg:block" />
                     <TerminalPanel 
@@ -369,6 +448,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                         overlayPosition="right-0 w-full lg:w-1/2"
                         className={`${mobileTab === 'a' ? 'hidden lg:flex' : 'flex'}`}
                         allowInteraction={allowInteraction}
+                        sessionStats={sessionStats}
                     />
                 </>
             ) : (
@@ -383,6 +463,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                     showControls={true}
                     overlayPosition="inset-x-0"
                     allowInteraction={allowInteraction}
+                    sessionStats={sessionStats}
                 />
             )}
         </div>

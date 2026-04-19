@@ -26,3 +26,8 @@ export interface CandidateState {
   data: SpinnerData | null;
   tpsHistory: number[];
 }
+
+export interface GlobalStats {
+  attempts: number;
+  failures: number;
+}
