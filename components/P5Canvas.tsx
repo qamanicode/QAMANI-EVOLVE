@@ -20,9 +20,10 @@ export interface P5CanvasRef {
 
 interface P5CanvasProps {
   code: string;
+  onCanvasError?: (error: string | null) => void;
 }
 
-export const P5Canvas = forwardRef<P5CanvasRef, P5CanvasProps>(({ code }, ref) => {
+export const P5Canvas = forwardRef<P5CanvasRef, P5CanvasProps>(({ code, onCanvasError }, ref) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const p5InstanceRef = useRef<any>(null);
@@ -106,12 +107,15 @@ export const P5Canvas = forwardRef<P5CanvasRef, P5CanvasProps>(({ code }, ref) =
       p5InstanceRef.current.remove();
     }
 
+    if (onCanvasError) onCanvasError(null);
+
     try {
       // Sanitize the code: remove markdown backticks if present
       const cleanCode = code.replace(/```javascript/g, '').replace(/```/g, '').trim();
 
       // Error rendering helper
       const renderCanvasError = (p: any, title: string, message: string) => {
+        if (onCanvasError) onCanvasError(`${title}: ${message}`);
         p.noLoop();
         p.clear();
         p.push();

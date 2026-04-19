@@ -13,6 +13,8 @@ export interface SpinnerData {
   tokensPerSecond: number;
   totalTokens: number;
   tpsHistory: number[]; // Time series of TPS sampled every 100ms
+  error?: string; // Runtime or compilation error
+  parentId?: number; // For lineage tracking
 }
 
 export interface GenerationStats {
@@ -25,6 +27,7 @@ export interface CandidateState {
   buffer: string;
   data: SpinnerData | null;
   tpsHistory: number[];
+  error?: string;
 }
 
 export interface GlobalStats {

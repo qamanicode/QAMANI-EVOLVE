@@ -107,6 +107,7 @@ interface TerminalPanelProps {
         totalFailures: number;
     };
     theme?: 'dark' | 'light';
+    error?: string;
 }
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({
@@ -122,7 +123,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
     className = "",
     allowInteraction = true,
     sessionStats,
-    theme = 'dark'
+    theme = 'dark',
+    error
 }) => {
     const [liveElapsed, setLiveElapsed] = useState(0);
     const [isCodeOpen, setIsCodeOpen] = useState(false);
@@ -270,6 +272,17 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({
                          <div  
                             className={`flex-1 overflow-auto custom-scrollbar transition-colors ${theme === 'dark' ? 'bg-[#020202]' : 'bg-neutral-50'}`}
                          >
+                            {error && (
+                                <div className="p-4 m-4 bg-red-950/20 border border-red-900/50 rounded text-red-500 font-mono text-[10px] space-y-2 animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                                        <span className="font-bold tracking-widest uppercase">Process_Incident_Detected</span>
+                                    </div>
+                                    <div className="pl-4 border-l border-red-900/30 py-1 opacity-80 backdrop-blur-sm">
+                                        {error}
+                                    </div>
+                                </div>
+                            )}
                             <div ref={codeScrollRef} className={`p-4 md:px-8 py-8 font-mono text-[10px] md:text-xs transition-colors ${theme === 'dark' ? 'text-neutral-400' : 'text-neutral-600'}`}>
                                 {highlightCode(codeToDisplay)}
                             </div>
@@ -511,6 +524,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                         allowInteraction={allowInteraction}
                         sessionStats={sessionStats}
                         theme={theme}
+                        error={candidates.a.error}
                     />
                     <div className="w-px bg-neutral-900 flex-none z-10 hidden lg:block" />
                     <TerminalPanel 
@@ -527,6 +541,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                         allowInteraction={allowInteraction}
                         sessionStats={sessionStats}
                         theme={theme}
+                        error={candidates.b.error}
                     />
                 </>
             ) : (
@@ -543,6 +558,7 @@ export const Terminal: React.FC<TerminalProps> = ({
                     allowInteraction={allowInteraction}
                     sessionStats={sessionStats}
                     theme={theme}
+                    error={currentData?.error}
                 />
             )}
         </div>

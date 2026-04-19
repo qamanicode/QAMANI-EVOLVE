@@ -129,6 +129,8 @@ export default function App() {
   // Theme & Layout State
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [viewLayout, setViewLayout] = useState<'desktop' | 'phone'>('desktop');
+  const [comparisonMode, setComparisonMode] = useState<'side-by-side' | 'overlay'>('side-by-side');
+  const [lineageOpen, setLineageOpen] = useState(false);
   
   // Mobile UI State
   const [mobileTab, setMobileTab] = useState<'a' | 'b'>('a');
@@ -199,6 +201,16 @@ export default function App() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleCanvasError = (variant: 'a' | 'b', error: string | null) => {
+    setCandidates(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            [variant]: { ...prev[variant], error: error || undefined }
+        };
+    });
   };
 
   const updateCandidateStream = (variant: 'a' | 'b', text: string) => {
@@ -564,7 +576,10 @@ export default function App() {
                     {!isSelectionMode ? (
             // SINGLE VIEW
             <div className="w-full h-full relative flex items-center justify-center">
-                <P5Canvas code={currentHistorySpinner?.p5Code || ""} />
+                <P5Canvas 
+                    code={currentHistorySpinner?.p5Code || ""} 
+                    onCanvasError={(err) => handleCanvasError('a', err)} 
+                />
                 
                 {hasStarted && !isGenerating && (
                     <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 sm:scale-100 origin-top-right">
@@ -630,7 +645,7 @@ export default function App() {
                     <div className={`w-1.5 h-1.5 rounded-full transition-colors ${mobileTab === 'a' ? 'bg-white' : 'bg-neutral-800'}`} />
                     <div className={`w-1.5 h-1.5 rounded-full transition-colors ${mobileTab === 'b' ? 'bg-white' : 'bg-neutral-800'}`} />
                 </div>
-
+                
                 {/* Variant A */}
                 {/* On mobile (< lg), only show if mobileTab is 'a'. On desktop (lg+), always show. */}
                 <div 
@@ -640,13 +655,16 @@ export default function App() {
                     role="button"
                     aria-label="Select Variant A"
                     className={`relative flex-1 border-b lg:border-b-0 lg:border-r border-neutral-900 flex-col items-center justify-center group cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500/50 
-                    ${mobileTab === 'b' ? 'hidden lg:flex' : 'flex'}`}
+                    ${mobileTab === 'b' && comparisonMode === 'side-by-side' ? 'hidden lg:flex' : 'flex'}
+                    ${comparisonMode === 'overlay' ? 'absolute inset-0 z-10' : ''}`}
                 >
-                    <div className={`absolute inset-0 bg-neutral-950/80 opacity-0 ${exportState ? '' : 'group-hover:opacity-100 group-focus-visible:opacity-100'} transition-opacity duration-300 z-30 flex items-center justify-center backdrop-grayscale`}>
-                        <span className="text-white font-mono text-sm tracking-[0.2em] uppercase border border-white/20 px-4 py-2 bg-black/50 backdrop-blur-md rounded">
-                            Select Variant A
-                        </span>
-                    </div>
+                    {comparisonMode === 'side-by-side' && (
+                        <div className={`absolute inset-0 bg-neutral-950/80 opacity-0 ${exportState ? '' : 'group-hover:opacity-100 group-focus-visible:opacity-100'} transition-opacity duration-300 z-30 flex items-center justify-center backdrop-grayscale`}>
+                            <span className="text-white font-mono text-sm tracking-[0.2em] uppercase border border-white/20 px-4 py-2 bg-black/50 backdrop-blur-md rounded">
+                                Select Variant A
+                            </span>
+                        </div>
+                    )}
 
                     {/* Streaming Overlay A */}
                     {candidates && (
@@ -659,8 +677,13 @@ export default function App() {
                     )}
 
                     {candidates?.a.data ? (
-                         <div className="w-full h-full flex items-center justify-center p-4 md:p-8 transition-all duration-500 group-hover:scale-105 group-focus-visible:scale-105 group-hover:opacity-40 group-focus-visible:opacity-40">
-                             <P5Canvas ref={canvasARef} code={candidates.a.data.p5Code} />
+                         <div className={`w-full h-full flex items-center justify-center p-4 md:p-8 transition-all duration-500 
+                            ${comparisonMode === 'side-by-side' ? 'group-hover:scale-105 group-focus-visible:scale-105 group-hover:opacity-40 group-focus-visible:opacity-40' : 'opacity-50'}`}>
+                             <P5Canvas 
+                                ref={canvasARef} 
+                                code={candidates.a.data.p5Code} 
+                                onCanvasError={(err) => handleCanvasError('a', err)}
+                             />
                          </div>
                     ) : (
                          // Fallback loader
@@ -680,13 +703,16 @@ export default function App() {
                     role="button"
                     aria-label="Select Variant B"
                     className={`relative flex-1 flex-col items-center justify-center group cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-purple-500/50
-                    ${mobileTab === 'a' ? 'hidden lg:flex' : 'flex'}`}
+                    ${mobileTab === 'a' && comparisonMode === 'side-by-side' ? 'hidden lg:flex' : 'flex'}
+                    ${comparisonMode === 'overlay' ? 'absolute inset-0 z-20 pointer-events-none' : ''}`}
                 >
-                    <div className={`absolute inset-0 bg-neutral-950/80 opacity-0 ${exportState ? '' : 'group-hover:opacity-100 group-focus-visible:opacity-100'} transition-opacity duration-300 z-30 flex items-center justify-center backdrop-grayscale`}>
-                        <span className="text-white font-mono text-sm tracking-[0.2em] uppercase border border-white/20 px-4 py-2 bg-black/50 backdrop-blur-md rounded">
-                            Select Variant B
-                        </span>
-                    </div>
+                    {comparisonMode === 'side-by-side' && (
+                        <div className={`absolute inset-0 bg-neutral-950/80 opacity-0 ${exportState ? '' : 'group-hover:opacity-100 group-focus-visible:opacity-100'} transition-opacity duration-300 z-30 flex items-center justify-center backdrop-grayscale`}>
+                            <span className="text-white font-mono text-sm tracking-[0.2em] uppercase border border-white/20 px-4 py-2 bg-black/50 backdrop-blur-md rounded">
+                                Select Variant B
+                            </span>
+                        </div>
+                    )}
 
                     {/* Streaming Overlay B */}
                     {candidates && (
@@ -699,8 +725,16 @@ export default function App() {
                     )}
 
                     {candidates?.b.data ? (
-                         <div className="w-full h-full flex items-center justify-center p-4 md:p-8 transition-all duration-500 group-hover:scale-105 group-focus-visible:scale-105 group-hover:opacity-40 group-focus-visible:opacity-40">
-                             <P5Canvas ref={canvasBRef} code={candidates.b.data.p5Code} />
+                         <div className={`w-full h-full flex items-center justify-center p-4 md:p-8 transition-all duration-500 
+                            ${comparisonMode === 'side-by-side' ? 'group-hover:scale-105 group-focus-visible:scale-105 group-hover:opacity-40 group-focus-visible:opacity-40' : 'opacity-50 pointer-events-auto hover:opacity-100 transition-opacity'}`}>
+                             <P5Canvas 
+                                ref={canvasBRef} 
+                                code={candidates.b.data.p5Code} 
+                                onCanvasError={(err) => handleCanvasError('b', err)}
+                             />
+                             {comparisonMode === 'overlay' && (
+                                 <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-[8px] text-white/50 uppercase tracking-widest pointer-events-none">Hover to reveal A</div>
+                             )}
                          </div>
                     ) : (
                          !isGenerating && (
@@ -710,9 +744,27 @@ export default function App() {
                          )
                     )}
                 </div>
+
+                {/* Comparison Mode Toggle */}
+                {isSelectionMode && !isGenerating && viewLayout === 'desktop' && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/40 backdrop-blur-lg border border-neutral-800 p-1 rounded-full">
+                        <button 
+                            onClick={() => setComparisonMode('side-by-side')}
+                            className={`px-3 py-1 rounded-full text-[9px] font-mono tracking-widest transition-all ${comparisonMode === 'side-by-side' ? 'bg-white text-black' : 'text-neutral-500 hover:text-white'}`}
+                        >
+                            SIDE_BY_SIDE
+                        </button>
+                        <button 
+                            onClick={() => setComparisonMode('overlay')}
+                            className={`px-3 py-1 rounded-full text-[9px] font-mono tracking-widest transition-all ${comparisonMode === 'overlay' ? 'bg-white text-black' : 'text-neutral-500 hover:text-white'}`}
+                        >
+                            OVERLAY_DIFF
+                        </button>
+                    </div>
+                )}
             </>
         )}
-                </div>
+    </div>
 
                 {/* Phone Bottom Navigation (Lumia Style) */}
                 {viewLayout === 'phone' && (
