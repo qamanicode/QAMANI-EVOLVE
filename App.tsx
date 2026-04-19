@@ -12,6 +12,8 @@ import { generateExportPack } from './utils/exportService';
 import { SpinnerData, CandidateState, GlobalStats } from './types';
 
 import { LineageView } from './components/LineageView';
+import { CinematicPromo } from './components/CinematicPromo';
+import { Atom, Zap } from 'lucide-react';
 
 // Initial seed code: Material Design 3 Circular Progress Indicator
 const PROGENITOR_CODE = `
@@ -133,6 +135,7 @@ export default function App() {
   const [viewLayout, setViewLayout] = useState<'desktop' | 'phone'>('desktop');
   const [comparisonMode, setComparisonMode] = useState<'side-by-side' | 'overlay'>('side-by-side');
   const [lineageOpen, setLineageOpen] = useState(false);
+  const [promoOpen, setPromoOpen] = useState(false);
   
   // Mobile UI State
   const [mobileTab, setMobileTab] = useState<'a' | 'b'>('a');
@@ -423,7 +426,8 @@ export default function App() {
       <div className={`flex-none h-14 flex items-center justify-between px-3 md:px-4 z-20 border-b transition-colors duration-500
         ${theme === 'dark' ? 'bg-black border-neutral-900' : 'bg-white border-neutral-200'}`}>
             <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 mr-2">
-                 <span className="font-bold tracking-tight text-xs sm:text-sm hidden sm:inline-block">
+                 <span className="font-bold tracking-tight text-xs sm:text-sm hidden sm:inline-flex items-center gap-2">
+                     <Atom className="w-5 h-5 text-blue-500 animate-spin-slow" />
                      <span className={theme === 'dark' ? 'text-neutral-100' : 'text-neutral-900'}>QAMANI</span>
                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 animate-gradient-text">EVOLVE</span>
                  </span>
@@ -450,6 +454,15 @@ export default function App() {
 
             {/* THEME & VIEW MODES (NEW) */}
             <div className="flex items-center gap-2 mr-2 md:mr-6">
+                 <motion.button 
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setPromoOpen(true)}
+                    className="p-2 text-yellow-500 hover:text-yellow-400 transition-colors"
+                    title="Chief Engineer's Gift"
+                >
+                    <Zap className="w-5 h-5 fill-current" />
+                </motion.button>
                 <ModernToggle 
                     active={lineageOpen} 
                     label="Lineage" 
@@ -792,17 +805,23 @@ export default function App() {
                 )}
            </div>
 
-           <LineageView 
-                isOpen={lineageOpen} 
-                onClose={() => setLineageOpen(false)} 
-                history={history}
-                currentIndex={currentIndex}
-                onSelect={(idx) => {
-                    setCurrentIndex(idx);
-                    setLineageOpen(false);
-                }}
-                theme={theme}
-            />
+        <LineageView 
+            isOpen={lineageOpen} 
+            onClose={() => setLineageOpen(false)} 
+            history={history}
+            currentIndex={currentIndex}
+            onSelect={(idx) => {
+                setCurrentIndex(idx);
+                setLineageOpen(false);
+            }}
+            theme={theme}
+        />
+
+        <AnimatePresence>
+            {promoOpen && (
+                <CinematicPromo onClose={() => setPromoOpen(false)} theme={theme} />
+            )}
+        </AnimatePresence>
 
             {/* ERROR TOAST (If API Key Missing) */}
             <AnimatePresence>
@@ -876,6 +895,11 @@ export default function App() {
                     animate={{ opacity: 1, scale: 1 }}
                     className="animate-in fade-in zoom-in duration-700 slide-in-from-bottom-4 flex flex-col items-center"
                 >
+                    <div className="mb-6 relative">
+                        <Atom className="w-24 h-24 text-blue-500 animate-spin-slow" />
+                        <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+                    </div>
+
                     <h1 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tighter max-w-4xl leading-none">
                         QAMANI <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 animate-gradient-text">EVOLVE</span>
                     </h1>

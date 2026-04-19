@@ -1,40 +1,42 @@
-# Data Processing and Visualisation Suite
+# ⚛️ QAMANI EVOLVE
+### Fusion-Grade Kinetic Intelligence Engine
 
-A Python tool for processing, analysing, and visualising numerical data. Designed to perform comparative analysis between datasets (X-Y data) and provide statistical, frequency-domain, and signal processing insights.
+> "Harnessing the raw power of Gemini to mutate code like radioactive isotopes. A digital particle accelerator for the creative soul."
 
-## Project Structure
+![QAMANI EVOLVE Banner](https://picsum.photos/seed/fusion-reactor/1200/400?blur=2)
 
-- `core/`: Core data structures and basic operations.
-- `analysis/`: Numerical analysis, signal processing, and statistical tools.
-- `plotting/`: Visualisation wrappers for Matplotlib and Plotly.
-- `utils/`: Common helper functions.
+## ☢️ The Nuclear Identity
 
-## Key Features
+**QAMANI EVOLVE** is not just an app; it is a software reactor. It uses the **Gemini 3 Flash** model as its core to evolve, mutate, and refine kinetic art in real-time. Designed with a brutalist, high-performance aesthetic, it treats every line of code as a high-energy particle in a controlled evolutionary experiment.
 
-- **X-Y Data Management**: Validated data structures for consistent processing.
-- **Statistical Analysis**: RMS, Skew, Kurtosis, Correlation, Covariance.
-- **Signal Processing**: Integration, Differentiation, Smoothing, Outlier Detection.
-- **Frequency Analysis**: Power Spectral Density (PSD) and Frequency Response Functions (FRF).
-- **Comparative Tools**: Resampling for non-conforming timestamps, cross-correlation, and trend comparison.
-- **Visualisation**: Automated generation of time-series, frequency, and correlation plots.
+## 🧬 Key Features
 
-## Installation
+- **Double-Variant Fission (A/B Testing):** Generate and compare two distinct mutations simultaneously. Choose the fittest code to continue the lineage.
+- **Lineage Tree (Evolutionary Tracking):** A full visual history of every generation. Jump back in time to any point in the evolutionary chain.
+- **Cinematic Promo Engine:** A built-in, live-rendered cinematic experience that showcases the birth of the machine (accessible via the ⚡ icon).
+- **Performance Diagnostics:** Real-time monitoring of tokens per second (TPS), generation time, and success rates.
+- **Lumia-Style Mobile Interface:** A fluid, technical layout for mobile devices inspired by the golden era of Windows Phone.
 
-```bash
-pip install numpy scipy matplotlib plotly
-```
+## 🚀 Live Cinematic Promo
 
-## Usage Example
+The project includes a **Live Cinematic Renderer**. Unlike static videos, this promo is rendered in real-time within the application's environment, ensuring pixel-perfect clarity and mathematical precision.
 
-```python
-import numpy as np
-import analysis.core as ac
+## 🛠️ Technical Stack
 
-# Generate dummy data
-x = np.linspace(0, 10, 100)
-y = np.sin(x)
+- **AI Core:** @google/genai (Gemini 3 Flash)
+- **Visuals:** p5.js (Instance Mode)
+- **Framework:** React 19 + TypeScript
+- **Animations:** Motion (Framer Motion)
+- **Styling:** Tailwind CSS
 
-# Analyze
-rms_val = ac.rms(y)
-f, psd = ac.get_psd(x, y)
-```
+## ⚡ Getting Started
+
+1. Set your `GEMINI_API_KEY` in the environment variables.
+2. Run `npm install`.
+3. Launch with `npm run dev`.
+4. Press **START EVOLVING** to begin the chain reaction.
+
+---
+
+Created with precision and passion by **QAMANI**. Under the spiritual guidance of **Google AI**.
+
