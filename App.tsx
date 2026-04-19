@@ -385,9 +385,22 @@ export default function App() {
                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 animate-gradient-text">EVOLVE</span>
                  </span>
                  <div className="h-4 w-px bg-neutral-800 hidden sm:block"></div>
-                 <div className="text-[9px] md:text-[10px] text-neutral-500 uppercase tracking-widest font-mono truncate">
-                    {!hasStarted ? "" : (isSelectionMode ? "Gemini 3 Flash Live Coding" : `History: ${currentIndex + 1}/${history.length}`)}
-                 </div>
+                  <div className="text-[9px] md:text-[10px] font-mono truncate py-1">
+                    {!hasStarted ? "" : (isSelectionMode ? (
+                        <div className="flex items-center gap-2">
+                             <span className="text-blue-400 font-black tracking-[0.3em] drop-shadow-[0_0_8px_rgba(96,165,250,0.4)]">QAMANI</span>
+                             <div className="w-1 h-1 rounded-full bg-neutral-800"></div>
+                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-neutral-400 to-neutral-600 font-bold tracking-[0.15em]">LIVE CODING</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                             <span className="text-neutral-600 font-medium tracking-widest">TIMELINE //</span>
+                             <span className="px-2 py-0.5 rounded-sm bg-neutral-900 border border-neutral-800 text-neutral-300 font-bold tabular-nums tracking-tighter">
+                                {currentIndex + 1} <span className="text-neutral-700 mx-1">OF</span> {history.length}
+                             </span>
+                        </div>
+                    ))}
+                  </div>
             </div>
 
             {hasStarted && (
